@@ -53,6 +53,7 @@ void loop() {
   // --- NENHUM SENSOR (das pontas) VIU PRETO ---
   else {
     andarFrente(); 
+    delay(20); 
   }
 }
 
