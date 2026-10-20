@@ -53,8 +53,8 @@ void loop() {
   // --- NENHUM SENSOR (das pontas) VIU PRETO ---
   else {
     andarFrente(); 
-    delay(20); 
   }
+   delay(20); 
 }
 
 // --- AS REGRAS DE MOVIMENTO COM VELOCIDADE REDUZIDA 🐢 ---
