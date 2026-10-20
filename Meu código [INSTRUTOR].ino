@@ -80,7 +80,7 @@ void virarEsquerdaFechada() {
 void virarEsquerda90Graus() {
   motorEsquerdo.writeMicroseconds(1300); 
   motorDireito.writeMicroseconds(1300);  
-  delay(20);
+  
 }
 
 // ---- DIREITA ----
