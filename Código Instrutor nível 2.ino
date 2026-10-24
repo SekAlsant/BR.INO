@@ -3,11 +3,16 @@
 Servo motorEsquerdo;
 Servo motorDireito;
 
-const int S1 = 2; // Extrema Esquerda (OUT 1)
-const int S2 = 3; // Meio Esquerda (OUT 2)
-const int S3 = 4; // Centro (OUT 3)
-const int S4 = 5; // Meio Direita (OUT 4)
-const int S5 = 6; // Extrema Direita (OUT 5)
+const int S1 = 2; 
+const int S2 = 3; 
+const int S3 = 4; 
+const int S4 = 5; 
+const int S5 = 6; 
+const int buzzerPin = 7; // Buzzer conectado no pino 7
+
+// Pinos do Ultrassom
+const int trigPin = 13;
+const int echoPin = 12;
 
 void setup() {
   pinMode(S1, INPUT);
@@ -15,6 +20,10 @@ void setup() {
   pinMode(S3, INPUT);
   pinMode(S4, INPUT);
   pinMode(S5, INPUT);
+  
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(buzzerPin, OUTPUT);
 
   motorEsquerdo.attach(9);
   motorDireito.attach(10);
@@ -23,6 +32,27 @@ void setup() {
 }
 
 void loop() {
+  // NOVA REGRA ABSOLUTA (Prioridade 1): O Ultrassom
+  int distanciaAtual = lerDistancia();
+  
+  if (distanciaAtual <= 15 && distanciaAtual > 0) { 
+    // Toca o buzzer indicando obstáculo detectado! (Frequência de 1000 Hz)
+    tone(buzzerPin, 1000);
+  // Para brevemente antes de iniciar o desvio
+    motorEsquerdo.writeMicroseconds(1500); 
+    motorDireito.writeMicroseconds(1500);
+    delay(100);
+    
+    // Executa o desvio
+    desviarObstaculo();
+    } else {
+    // Se não há obstáculo, desliga o buzzer
+    noTone(buzzerPin);
+  }
+
+  // --- SE ELE CHEGAR AQUI, É PORQUE NÃO TEM OBSTÁCULO ---
+  
+  // Lê a placa infravermelha
   int le1 = digitalRead(S1);
   int le2 = digitalRead(S2);
   int le3 = digitalRead(S3);
@@ -142,4 +172,58 @@ void atravessarCruzamento() {
   // O Arduino vai "travar" neste comando de ir para frente por 400 milissegundos.
   // Durante esse tempo, ele ignora os sensores e apenas pula a fita perpendicular!
   delay(400); 
+}
+int lerDistancia() {
+  digitalWrite(trigPin, LOW); 
+  delayMicroseconds(2); 
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10); 
+  digitalWrite(trigPin, LOW);
+  
+  long duration = pulseIn(echoPin, HIGH, 30000); // Timeout de 30ms para não travar
+  int distance = (duration / 2) / 29.1;
+  
+  if (distance == 0) return 999; // Se der erro na leitura, finge que tá muito longe
+  return distance;
+}
+
+void desviarObstaculo() {
+  // 1. SALVA-VIDAS: Dar ré para desenganchar a placa do chão/obstáculo!
+  motorEsquerdo.writeMicroseconds(1000); // Esquerda Ré
+  motorDireito.writeMicroseconds(2000);  // Direita Ré
+  delay(400); // Dá ré por quase meio segundo
+
+  // 2. Giro no próprio eixo para a direita (fugindo da rota)
+  virarDireitaFechada(); 
+  delay(500); // 500ms. Se ele girar mais que 90 graus, diminua para 400.
+
+  // 3. Andar reto na diagonal (Passando ao lado do objeto)
+  // Usamos a velocidade padrão de andar reto para evitar patinadas
+  motorEsquerdo.writeMicroseconds(1700); 
+  motorDireito.writeMicroseconds(1300);  
+  delay(1000); // Anda na diagonal por 1 segundo (ajuste se o obstáculo for longo)
+
+  // 4. Modo Varredura: Procurar a linha (Giro para a esquerda)
+  virarEsquerdaSuave(); // USAMOS O SUAVE (1300/1300) para ele não passar direto!
+  
+  while(true) {
+    // Fica lendo a placa
+    int l1 = digitalRead(S1);
+    int l2 = digitalRead(S2);
+    int l3 = digitalRead(S3);
+    int l4 = digitalRead(S4);
+    int l5 = digitalRead(S5);
+    
+    // Se QUALQUER sensor fisgar a linha preta...
+    if (l1 == LOW || l2 == LOW || l3 == LOW || l4 == LOW || l5 == LOW) {
+      
+      // FREIO DE MÃO IMEDIATO! 
+      // Se não fizermos isso, a inércia faz ele passar varado da linha.
+      motorEsquerdo.writeMicroseconds(1500); 
+      motorDireito.writeMicroseconds(1500);
+      delay(200); // Pausa dramática de 0.2 segundos para a roda parar totalmente
+      
+      break; // Quebra o ciclo e devolve pro loop() ler a linha com calma
+    }
+  }
 }
