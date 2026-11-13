@@ -14,7 +14,7 @@ Servo motorDireito;
 
 // 1 = Muito Lento | 2 = Lento (Original) | 3 = Médio | 4 = Rápido | 5 = Máximo
 
-int velocidadeRobo = 3; 
+int velocidadeRobo = 4; 
 
 // =================================================================
 
